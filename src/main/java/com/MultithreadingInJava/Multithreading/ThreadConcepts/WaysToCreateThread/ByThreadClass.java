@@ -3,7 +3,6 @@ package com.MultithreadingInJava.Multithreading.ThreadConcepts.WaysToCreateThrea
 public class ByThreadClass extends Thread{
     @Override
     public void run() {
-//        super.run();
         System.out.println("Extending Thread class");
     }
 }
