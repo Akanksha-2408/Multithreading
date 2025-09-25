@@ -4,19 +4,19 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Account {
     static long count = 2025202500;
-    final long accno;
+    final long accNo;
     double balance;
     String name;
     ReentrantLock lock = new ReentrantLock();
 
     public Account(double balance, String name) {
-        this.accno = ++count;
+        this.accNo = ++count;
         this.balance = balance;
         this.name = name;
     }
 
-    public long getAccno() {
-        return accno;
+    public long getAccNo() {
+        return accNo;
     }
 
     public double getBalance() {
@@ -40,7 +40,7 @@ public class Account {
     }
 
     public String toString() {
-        return "\nAccount Number : " + accno + "\nBalance : " + balance + "\nAccount Holder Name : " + name;
+        return "\nAccount Number : " + accNo + "\nBalance : " + balance + "\nAccount Holder Name : " + name;
     }
 }
 

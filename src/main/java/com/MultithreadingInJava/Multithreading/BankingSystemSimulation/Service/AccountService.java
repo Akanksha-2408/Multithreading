@@ -48,81 +48,62 @@ public class AccountService implements AccountRepo {
     }
 
     @Override
-    public void deposit(int pin, double amount) {
+    public void deposit(int pin, double amount) throws InterruptedException {
+        Account account = map.get(pin);
+        if (account == null) {
+            System.out.println("Account not found.");  //throw exception
+            return;
+        }
+        if (account.getLock().tryLock(3, TimeUnit.SECONDS)) {
+            try {
+                account.setBalance(account.getBalance() + amount);
+            } finally {
+                account.getLock().unlock();
+            }
+        } else {
+            System.out.println("Deposit failed: Account is currently in use. Try again later.\n");
+        }
+    }
+
+    @Override
+    public void withdraw(int pin, double amount) throws InterruptedException {
         Account account = map.get(pin);
         if (account == null) {
             System.out.println("Account not found.");
             return;
         }
-
-        try {
-            if (account.getLock().tryLock(3, TimeUnit.SECONDS)) {
-                try {
-                    account.setBalance(account.getBalance() + amount);
-                    System.out.println("Amount deposited successfully!\n");
-                } finally {
-                    account.getLock().unlock();
+        if (account.getLock().tryLock(2, TimeUnit.SECONDS)) {
+            try {
+                if (account.getBalance() < amount) {
+                    System.out.println("Insufficient balance");
+                } else {
+                    account.setBalance(account.getBalance() - amount);
                 }
-            } else {
-                System.out.println("Deposit failed: Account is currently in use. Try again later.\n");
+            } finally {
+                account.getLock().unlock();
             }
-        } catch (InterruptedException e) {
-            System.out.println("Deposit interrupted.");
-            Thread.currentThread().interrupt(); // Restore interrupt status
-        }
-    }
-
-
-    @Override
-    public void withdraw(int pin, double amount) {
-        Account account = map.get(pin);
-        if (account == null) {
-            System.out.println("Account not found.");
-            return;
-        }
-        try {
-            if (account.getLock().tryLock(2, TimeUnit.SECONDS)) {
-                try {
-                    if (account.getBalance() < amount) {
-                        System.out.println("Insufficient balance");
-                    } else {
-                        account.setBalance(account.getBalance() - amount);
-                        System.out.println("Amount Withdrawn Successfully");
-                    }
-                } finally {
-                    account.getLock().unlock();
-                }
-            }
-        } catch (InterruptedException e) {
-            System.out.println("Deposit interrupted.");
-            Thread.currentThread().interrupt(); // Restore interrupt status
         }
     }
 
     @Override
-    public double checkBalance(int pin) {
+    public double checkBalance(int pin) throws InterruptedException {
         Account account = map.get(pin);
         Double balance = 0.0;
         if (account == null) {
             return 0;
         }
-        try {
-            if (account.getLock().tryLock(2, TimeUnit.SECONDS)) {
-                try {
-                    balance = account.getBalance();
-                } finally {
-                    account.getLock().unlock();
-                }
+        if (account.getLock().tryLock(2, TimeUnit.SECONDS)) {
+            try {
+                balance = account.getBalance();
+            } finally {
+                account.getLock().unlock();
             }
-        } catch (InterruptedException e) {
-            System.out.println("Deposit interrupted.");
-            Thread.currentThread().interrupt(); // Restore interrupt status
         }
         return balance;
     }
 
     @Override
-    public void TransferMoney(long fromAccNum, long toAccNum, double amount) {
+    public void TransferMoney(long fromAccNum, long toAccNum, double amount) throws InterruptedException {
         Account from = getAccountByAccountNumber(fromAccNum);
         Account to = getAccountByAccountNumber(toAccNum);
 
@@ -164,11 +145,6 @@ public class AccountService implements AccountRepo {
 
             from.setBalance(from.getBalance() - amount);
             to.setBalance(to.getBalance() + amount);
-            System.out.println("Transfer successful");
-
-        } catch (InterruptedException e) {
-            System.out.println("Transfer interrupted.");
-            Thread.currentThread().interrupt(); // Restore interrupt flag
 
         } finally {
             if (secondLocked) {
@@ -182,8 +158,7 @@ public class AccountService implements AccountRepo {
 
 
     //Helper methods
-    public boolean NewOrExistingAccount() {
-        boolean flag = false;
+    public Boolean NewOrExistingAccount() {
         System.out.println("\n\n1. New Account\n" +
                 "2. Existing Account\n" +
                 "3. Close\n");
@@ -198,24 +173,21 @@ public class AccountService implements AccountRepo {
         switch (choice) {
             case 1:
                 createAccount();
-                break;
+                return false;
             case 2:
-                flag = true;
-                break;
+                return true;
             case 3:
-                System.exit(0);
-                break;
+                return null;
             default:
                 System.out.println("Wrong choice");
-                break;
+                return NewOrExistingAccount();
         }
-        return flag;
     }
 
     public Account getAccountByAccountNumber(long accountNumber) {
         Account acc = null;
         for (Account account : map.values()) {
-            if (account.getAccno() == accountNumber) {
+            if (account.getAccNo() == accountNumber) {
                 acc =  account;
                 break;
             }

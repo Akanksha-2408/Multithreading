@@ -1,16 +1,16 @@
 package com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Repository;
 
-public interface AccountRepo {
+public interface AccountRepo {   //throw exception
 
     public Integer validateUser();
 
     public void createAccount();
 
-    void deposit(int pin, double amount);
+    void deposit(int pin, double amount) throws InterruptedException;
 
-    void withdraw(int pin, double amount);
+    void withdraw(int pin, double amount) throws InterruptedException;
 
-    double checkBalance(int pin);
+    double checkBalance(int pin) throws InterruptedException;
 
-    public void TransferMoney(long fromAcc, long toAcc, double amount);
+    public void TransferMoney(long fromAcc, long toAcc, double amount) throws InterruptedException;
 }

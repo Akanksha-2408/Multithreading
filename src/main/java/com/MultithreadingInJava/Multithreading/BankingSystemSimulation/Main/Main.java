@@ -2,9 +2,7 @@ package com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Main;
 
 import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Entity.Account;
 import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Service.AccountService;
-import org.aspectj.weaver.ast.Call;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
@@ -18,14 +16,18 @@ public class Main {
     static Scanner sc = new Scanner(System.in);
     static Map<Integer, Account> map = AccountService.map;
 
-    static List<Runnable> runnables = new ArrayList<>();
-
     public static void main(String[] args) {
 
         ExecutorService executorService = Executors.newFixedThreadPool(2);
 
         while (true) {
-            boolean existingAccount = accountService.NewOrExistingAccount();
+
+            Boolean existingAccount = accountService.NewOrExistingAccount();
+            if (existingAccount == null) {
+                System.out.print("Exiting...");
+                break;
+            }
+
             Integer PIN = null;
 
             if (existingAccount) {
@@ -58,7 +60,7 @@ public class Main {
                         choice = sc.nextInt();
                         sc.nextLine();
                     } catch (InputMismatchException e) {
-                        System.out.println("Invalid input. Enter a number between 1 and 5.");
+                        System.out.println("Invalid input. Enter correct choice.");
                         sc.nextLine();
                         continue;
                     }
@@ -69,7 +71,19 @@ public class Main {
                             double dAmount = sc.nextDouble();
                             sc.nextLine();
                             Integer depositPIN = PIN;
-                            executorService.submit(() -> accountService.deposit(depositPIN, dAmount));
+                            Future<?> future = executorService.submit(() -> {
+                                try {
+                                    accountService.deposit(depositPIN, dAmount);
+                                } catch(InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                            try {
+                                future.get();
+                                System.out.println("Amount Deposited Successfully!");
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                             break;
 
                         case 2:
@@ -77,19 +91,31 @@ public class Main {
                             double wAmount = sc.nextDouble();
                             sc.nextLine();
                             Integer withdrawPIN = PIN;
-                            executorService.submit(() -> accountService.withdraw(withdrawPIN, wAmount));
+                            future = executorService.submit(() -> {
+                                try {
+                                    accountService.withdraw(withdrawPIN, wAmount);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                            try {
+                                future.get();
+                                System.out.println("Amount Withdrawn Successfully!");
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                             break;
 
                         case 3:
-                            long senderAccountNumber = map.get(PIN).getAccno();  // sender's account number
+                            long senderAccountNumber = map.get(PIN).getAccNo();  // sender's account number
                             System.out.println("Enter the name to transfer money: ");
                             String name = sc.nextLine();
-                            long receiverAccountNumber = 0;
 
+                            long receiverAccountNumber = 0;
                             boolean receiverFound = false;
                             for (Map.Entry<Integer, Account> entry : map.entrySet()) {
                                 if (entry.getValue().getName().equalsIgnoreCase(name)) {
-                                    receiverAccountNumber = entry.getValue().getAccno();
+                                    receiverAccountNumber = entry.getValue().getAccNo();
                                     receiverFound = true;
                                     break;
                                 }
@@ -104,7 +130,19 @@ public class Main {
                             double amount = sc.nextDouble();
                             sc.nextLine();
                             long finalReceiverAccountNumber = receiverAccountNumber;
-                            executorService.submit(() -> accountService.TransferMoney(senderAccountNumber, finalReceiverAccountNumber, amount));
+                            future = executorService.submit(() -> {
+                                try {
+                                    accountService.TransferMoney(senderAccountNumber, finalReceiverAccountNumber, amount);
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            });
+                            try {
+                                future.get();
+                                System.out.println("Amount Transferred Successfully!");
+                            } catch (InterruptedException | ExecutionException e) {
+                                throw new RuntimeException(e);
+                            }
                             break;
 
                         case 4:
@@ -115,9 +153,9 @@ public class Main {
                                 System.out.println("Current Balance: " + balance);
                                 return balance;
                             };
-                            Future<Double> future = executorService.submit(balanceTask);
+                            future = executorService.submit(balanceTask);
                             try {
-                                future.get(); // wait for completion (optional)
+                                future.get();
                             } catch (InterruptedException | ExecutionException e) {
                                 e.printStackTrace();
                             }
@@ -132,8 +170,14 @@ public class Main {
                     }
                 }
             }
-            executorService.shutdown();
         }
-
+        executorService.shutdown();
+        try {
+            if(executorService.awaitTermination(3, TimeUnit.SECONDS)) {
+                executorService.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executorService.shutdownNow();
+        }
     }
 }
