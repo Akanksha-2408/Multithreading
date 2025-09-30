@@ -1,20 +1,18 @@
 package com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Main;
 
 import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Entity.Account;
+import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.ExceptionHandler.BankingException;
+import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.ExceptionHandler.ErrorCode;
 import com.MultithreadingInJava.Multithreading.BankingSystemSimulation.Service.AccountService;
 
-import java.util.ArrayList;
-import java.util.InputMismatchException;
-import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.*;
 
 public class Main {
 
     static AccountService accountService = new AccountService();
     static Scanner sc = new Scanner(System.in);
-    static Map<Integer, Account> map = AccountService.map;
+    static List<Account> accountList = new ArrayList<>();
 
     public static void main(String[] args) {
 
@@ -35,16 +33,17 @@ public class Main {
                 try {
                     PIN = Integer.parseInt(sc.nextLine());
                 } catch (NumberFormatException e) {
-                    System.out.println("Invalid PIN format.");
-                    continue;
+//                    System.out.println("Invalid PIN format.");  //TODO
+                    throw new BankingException(ErrorCode.INVALID_PIN);
                 }
 
                 // Check if PIN exists
-                if (map.containsKey(PIN)) {
-                    System.out.println("WELCOME " + map.get(PIN).getName() + " !!");
+                if (accountList.contains(PIN)) {
+                    System.out.println("WELCOME " + accountList.get(PIN).getName() + " !!");
+
                 } else {
-                    System.out.println("PIN not Found");
-                    continue;
+//                    System.out.println("PIN not Found");  //TODO
+                    throw new BankingException(ErrorCode.PIN_NOT_FOUND);
                 }
 
                 int choice = 0;
@@ -60,9 +59,8 @@ public class Main {
                         choice = sc.nextInt();
                         sc.nextLine();
                     } catch (InputMismatchException e) {
-                        System.out.println("Invalid input. Enter correct choice.");
-                        sc.nextLine();
-                        continue;
+//                        System.out.println("Invalid input. Enter correct choice.");  //TODO
+                        throw new BankingException(ErrorCode.INVALID_CHOICE);
                     }
 
                     switch (choice) {
@@ -107,15 +105,15 @@ public class Main {
                             break;
 
                         case 3:
-                            long senderAccountNumber = map.get(PIN).getAccNo();  // sender's account number
+                            long senderAccountNumber = accountList.get(PIN).getAccNo();  // sender's account number
                             System.out.println("Enter the name to transfer money: ");
                             String name = sc.nextLine();
 
                             long receiverAccountNumber = 0;
                             boolean receiverFound = false;
-                            for (Map.Entry<Integer, Account> entry : map.entrySet()) {
-                                if (entry.getValue().getName().equalsIgnoreCase(name)) {
-                                    receiverAccountNumber = entry.getValue().getAccNo();
+                            for (Account account : accountList) {
+                                if (account.getName().equalsIgnoreCase(name)) {
+                                    receiverAccountNumber = account.getAccNo();
                                     receiverFound = true;
                                     break;
                                 }
@@ -157,7 +155,7 @@ public class Main {
                             try {
                                 future.get();
                             } catch (InterruptedException | ExecutionException e) {
-                                e.printStackTrace();
+                                throw new RuntimeException(e);
                             }
                             break;
 

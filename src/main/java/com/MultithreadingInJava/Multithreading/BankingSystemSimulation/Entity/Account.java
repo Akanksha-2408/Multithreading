@@ -5,14 +5,16 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Account {
     static long count = 2025202500;
     final long accNo;
+    Integer pin;
     double balance;
     String name;
     ReentrantLock lock = new ReentrantLock();
 
-    public Account(double balance, String name) {
+    public Account(double balance, String name, Integer pin) {
         this.accNo = ++count;
         this.balance = balance;
         this.name = name;
+        this.pin = pin;
     }
 
     public long getAccNo() {
@@ -37,6 +39,14 @@ public class Account {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Integer getPin() {
+        return pin;
+    }
+
+    public void setPin(Integer pin) {
+        this.pin = pin;
     }
 
     public String toString() {
