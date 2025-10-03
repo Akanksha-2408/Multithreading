@@ -11,13 +11,14 @@ public enum ErrorCode {
     INSUFFICIENT_BALANCE(1007, "Insufficient Balance"),
     INVALID_ACCOUNT(1008, "Invalid Account"),
     INVALID_TRANSACTION(1009, "You cannot transfer money to yourself"),
-    LOCK_UNAVAILABLE(1010, "Transfer failed: Could not acquire lock for your account.");
+    LOCK_UNAVAILABLE(1010, "Transfer failed: Could not acquire lock");
 
     private int code;
     private String description;
 
     ErrorCode(int code, String description) {
         this.code = code;
+        this.description = description;
     }
 
     public int getCode() {

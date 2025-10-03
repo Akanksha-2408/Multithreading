@@ -11,20 +11,18 @@ import java.util.concurrent.TimeUnit;
 public class AccountService implements AccountRepo {
 
     Scanner sc = new Scanner(System.in);
-//    public static Map<Integer, Account> map = new HashMap<>();
-                                                                  //TODO: Replace Sout with throw customException(appropriate class name)
-    public List<Account> accountList;
+    public static List<Account> accountList = new ArrayList<>();  //actual
 
     @Override
     public Integer validateUser() {
         System.out.print("Enter your PIN: ");
-        int pin = sc.nextInt();
+        Integer pin;
+        pin = sc.nextInt();
         sc.nextLine();
 
-        if (accountList.contains(pin)) {
+        if (accountList.get(pin) != null) {
             return pin;
         } else {
-//            System.out.println("Invalid PIN");  //TODO
             throw new BankingException(ErrorCode.INVALID_PIN);
         }
     }
@@ -34,10 +32,11 @@ public class AccountService implements AccountRepo {
         System.out.print("Set your 4-digit PIN: \n");
         int PIN = sc.nextInt();
         sc.nextLine();
-        for(Account account:accountList) {
-            if (account.getPin() == PIN) {
-//                System.out.println("Account already exists !");  //TODO
-                throw new BankingException(ErrorCode.CREATE_ACCOUNT);
+        if(null != accountList) {
+            for (Account account : accountList) {
+                if (account.getPin() == PIN) {
+                    throw new BankingException(ErrorCode.CREATE_ACCOUNT);
+                }
             }
         }
         System.out.print("Enter Account holder name: \n");
@@ -51,9 +50,14 @@ public class AccountService implements AccountRepo {
 
     @Override
     public void deposit(int pin, double amount) throws InterruptedException {
-        Account account = accountList.get(pin);
+        Account account = null;
+        for(Account acc : accountList) {
+            if (acc.getPin() == pin) {
+                account = acc;
+            }
+        }
+        
         if (account == null) {
-//            System.out.println("Account not found.");  //TODO
             throw new BankingException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         if (account.getLock().tryLock(3, TimeUnit.SECONDS)) {
@@ -63,22 +67,24 @@ public class AccountService implements AccountRepo {
                 account.getLock().unlock();
             }
         } else {
-//            System.out.println("Deposit failed: Account is currently in use. Try again later.\n");  //TODO
             throw new BankingException(ErrorCode.DEPOSIT_FAILED);
         }
     }
 
     @Override
     public void withdraw(int pin, double amount) throws InterruptedException {
-        Account account = accountList.get(pin);
+        Account account = null;
+        for(Account acc : accountList) {
+            if (acc.getPin() == pin) {
+                account = acc;
+            }
+        }
         if (account == null) {
-//            System.out.println("Account not found.");  //TODO
             throw new BankingException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         if (account.getLock().tryLock(2, TimeUnit.SECONDS)) {
             try {
                 if (account.getBalance() < amount) {
-//                    System.out.println("Insufficient balance");  //TODO
                     throw new BankingException(ErrorCode.INSUFFICIENT_BALANCE);
                 } else {
                     account.setBalance(account.getBalance() - amount);
@@ -91,8 +97,13 @@ public class AccountService implements AccountRepo {
 
     @Override
     public double checkBalance(int pin) throws InterruptedException {
-        Account account = accountList.get(pin);
-        Double balance = 0.0;
+        Account account = null;
+        for(Account acc : accountList) {
+            if (acc.getPin() == pin) {
+                account = acc;
+            }
+        }
+        double balance = 0.0;
         if (account == null) {
             return 0;
         }
@@ -112,12 +123,10 @@ public class AccountService implements AccountRepo {
         Account to = getAccountByAccountNumber(toAccNum);
 
         if (from == null || to == null) {
-//            System.out.println("Invalid account(s)");  //TODO
             throw new BankingException(ErrorCode.INVALID_ACCOUNT);
         }
 
         if(from == to) {
-//            System.out.println("You cannot transfer money to yourself !");  //TODO
             throw new BankingException(ErrorCode.INVALID_TRANSACTION);
         }
 
@@ -132,19 +141,16 @@ public class AccountService implements AccountRepo {
             // Try to acquire both locks with timeout
             firstLocked = first.getLock().tryLock(2, TimeUnit.SECONDS);
             if (!firstLocked) {
-//                System.out.println("Transfer failed: Could not acquire lock");  //TODO
                 throw new BankingException(ErrorCode.LOCK_UNAVAILABLE);
             }
 
             secondLocked = second.getLock().tryLock(2, TimeUnit.SECONDS);
             if (!secondLocked) {
-//                System.out.println("Transfer failed: Could not acquire lock for reciever's account.");  //TODO
                 throw new BankingException(ErrorCode.LOCK_UNAVAILABLE);
             }
 
             // Now both locks are acquired
             if (from.getBalance() < amount) {
-//                System.out.println("Transfer failed: Insufficient balance");  //TODO
                 throw new BankingException(ErrorCode.INSUFFICIENT_BALANCE);
             }
 
@@ -172,22 +178,21 @@ public class AccountService implements AccountRepo {
         try {
             choice = sc.nextInt();
         } catch(InputMismatchException e) {
-//            System.out.println("Invalid choice.");  //TODO
             throw new BankingException(ErrorCode.INVALID_CHOICE);
         }
         sc.nextLine();
-        switch (choice) {
-            case 1:
+        return switch (choice) {
+            case 1 -> {
                 createAccount();
-                return false;
-            case 2:
-                return true;
-            case 3:
-                return null;
-            default:
+                yield false;
+            }
+            case 2 -> true;
+            case 3 -> null;
+            default -> {
                 System.out.println("Wrong choice");
-                return NewOrExistingAccount();
-        }
+                yield NewOrExistingAccount();
+            }
+        };
     }
 
     public Account getAccountByAccountNumber(long accountNumber) {
